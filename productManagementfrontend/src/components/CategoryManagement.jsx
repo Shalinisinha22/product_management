@@ -1,14 +1,54 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+
+// Backend API URL
+const API_URL = 'http://localhost:5000/api'
+
+// Helper function to get headers with token
+function getHeaders() {
+  const token = localStorage.getItem('token')
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  }
+}
 
 const CategoryManagement = () => {
-  const [categories, setCategories] = useState([
-    { id: 1, name: 'Electronics' },
-    { id: 2, name: 'Clothing' },
-    { id: 3, name: 'Books' },
-  ])
+  const [categories, setCategories] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
   const [categoryName, setCategoryName] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+
+  // Load categories from API when component loads
+  useEffect(() => {
+    loadCategories()
+  }, [searchTerm])
+
+  // Function to load categories from API
+  async function loadCategories() {
+    try {
+      setIsLoading(true)
+      
+      // Build URL with search parameter
+      let url = `${API_URL}/categories?page=1&limit=100`
+      if (searchTerm) {
+        url += `&search=${searchTerm}`
+      }
+      
+      const response = await axios.get(url, { headers: getHeaders() })
+      
+      if (response.data.success) {
+        setCategories(response.data.data.categories)
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error)
+      alert('Failed to load categories')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleAdd = () => {
     setEditingCategory(null)
@@ -22,36 +62,76 @@ const CategoryManagement = () => {
     setIsModalOpen(true)
   }
 
-  const handleSave = () => {
+  // Save category - create or update
+  async function handleSave() {
     if (!categoryName.trim()) {
       alert('Please enter a category name')
       return
     }
 
-    if (editingCategory) {
-      // Update existing category
-      setCategories(
-        categories.map((cat) =>
-          cat.id === editingCategory.id ? { ...cat, name: categoryName } : cat
+    try {
+      if (editingCategory) {
+        // Update existing category - call API
+        const response = await axios.put(
+          `${API_URL}/categories/${editingCategory._id}`,
+          { name: categoryName },
+          { headers: getHeaders() }
         )
-      )
-    } else {
-      // Add new category
-      const newCategory = {
-        id: Date.now(),
-        name: categoryName,
+        
+        if (response.data.success) {
+          // Reload categories from API
+          loadCategories()
+          setIsModalOpen(false)
+          setCategoryName('')
+          setEditingCategory(null)
+        } else {
+          alert(response.data.message || 'Failed to update category')
+        }
+      } else {
+        // Create new category - call API
+        const response = await axios.post(
+          `${API_URL}/categories`,
+          { name: categoryName },
+          { headers: getHeaders() }
+        )
+        
+        if (response.data.success) {
+          // Reload categories from API
+          loadCategories()
+          setIsModalOpen(false)
+          setCategoryName('')
+        } else {
+          alert(response.data.message || 'Failed to create category')
+        }
       }
-      setCategories([...categories, newCategory])
+    } catch (error) {
+      console.error('Error saving category:', error)
+      const message = error.response?.data?.message || 'Failed to save category'
+      alert(message)
     }
-
-    setIsModalOpen(false)
-    setCategoryName('')
-    setEditingCategory(null)
   }
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
-      setCategories(categories.filter((cat) => cat.id !== id))
+  // Delete category - call API
+  async function handleDelete(id) {
+    if (!window.confirm('Are you sure you want to delete this category?')) {
+      return
+    }
+
+    try {
+      const response = await axios.delete(`${API_URL}/categories/${id}`, {
+        headers: getHeaders(),
+      })
+      
+      if (response.data.success) {
+        // Reload categories from API
+        loadCategories()
+      } else {
+        alert(response.data.message || 'Failed to delete category')
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      const message = error.response?.data?.message || 'Failed to delete category'
+      alert(message)
     }
   }
 
@@ -63,6 +143,8 @@ const CategoryManagement = () => {
           <input
             type="text"
             placeholder="Search categories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -93,30 +175,44 @@ const CategoryManagement = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {categories.map((category) => (
-              <tr key={category.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {category.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {category.name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleEdit(category)}
-                    className="text-blue-600 hover:text-blue-900 mr-4"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(category.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Delete
-                  </button>
+            {isLoading ? (
+              <tr>
+                <td colSpan="3" className="px-6 py-4 text-center text-gray-500">
+                  Loading categories...
                 </td>
               </tr>
-            ))}
+            ) : categories.length === 0 ? (
+              <tr>
+                <td colSpan="3" className="px-6 py-4 text-center text-gray-500">
+                  No categories found
+                </td>
+              </tr>
+            ) : (
+              categories.map((category) => (
+                <tr key={category._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {category._id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {category.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleEdit(category)}
+                      className="text-blue-600 hover:text-blue-900 mr-4"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(category._id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
           </div>

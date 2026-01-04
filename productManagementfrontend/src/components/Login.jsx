@@ -10,22 +10,25 @@ const Login = () => {
   const { login } = useContext(AuthContext)
   const navigate = useNavigate()
 
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setIsLoading(true)
 
-    // Simulate a small delay for better UX
-    setTimeout(() => {
-      const result = login(username, password)
+    try {
+      // Call login function from context (it's async)
+      const result = await login(username, password)
       
       if (result.success) {
         navigate('/dashboard')
       } else {
         setError(result.message)
       }
+    } catch (error) {
+      setError('Login failed. Please try again.')
+    } finally {
       setIsLoading(false)
-    }, 500)
+    }
   }
 
   return (

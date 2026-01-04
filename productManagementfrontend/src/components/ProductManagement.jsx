@@ -1,57 +1,22 @@
 import { useState, useEffect } from 'react'
+import axios from 'axios'
+
+// Backend API URL
+const API_URL = 'http://localhost:5000/api'
+
+// Helper function to get headers with token
+function getHeaders() {
+  const token = localStorage.getItem('token')
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  }
+}
 
 const ProductManagement = () => {
-  // Sample data - in a real app, this would come from an API
-  const [categories] = useState([
-    { id: 1, name: 'Electronics' },
-    { id: 2, name: 'Clothing' },
-    { id: 3, name: 'Books' },
-  ])
-
-  const [products, setProducts] = useState([
-    { 
-      id: 1, 
-      name: 'Laptop', 
-      price: 999.99, 
-      category: 'Electronics', 
-      stock: 50,
-      images: ['https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400', 'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=400']
-    },
-    { 
-      id: 2, 
-      name: 'T-Shirt', 
-      price: 19.99, 
-      category: 'Clothing', 
-      stock: 100,
-      images: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400']
-    },
-    { 
-      id: 3, 
-      name: 'JavaScript Book', 
-      price: 29.99, 
-      category: 'Books', 
-      stock: 30,
-      images: ['https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400']
-    },
-    { 
-      id: 4, 
-      name: 'Smartphone', 
-      price: 699.99, 
-      category: 'Electronics', 
-      stock: 75,
-      images: ['https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400', 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400']
-    },
-    { 
-      id: 5, 
-      name: 'Jeans', 
-      price: 49.99, 
-      category: 'Clothing', 
-      stock: 60,
-      images: ['https://images.unsplash.com/photo-1542272604-787c3835535d?w=400']
-    },
-  ])
-
-  const [filteredProducts, setFilteredProducts] = useState(products)
+  const [categories, setCategories] = useState([])
+  const [products, setProducts] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
   const [formData, setFormData] = useState({
@@ -59,9 +24,9 @@ const ProductManagement = () => {
     price: '',
     category: '',
     stock: '',
-    images: [],
   })
-  const [imageInputs, setImageInputs] = useState([''])
+  const [selectedImages, setSelectedImages] = useState([])
+  const [imagePreviews, setImagePreviews] = useState([])
 
   // Filter and search states
   const [searchTerm, setSearchTerm] = useState('')
@@ -71,93 +36,138 @@ const ProductManagement = () => {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
   const itemsPerPage = 5
 
-  // Function to sort products
-  const sortProducts = (productA, productB) => {
-    // Step 1: Get the values we want to compare (e.g., name, price, stock)
-    let valueA = productA[sortBy]
-    let valueB = productB[sortBy]
+  // Load categories from API
+  useEffect(() => {
+    loadCategories()
+  }, [])
 
-    // Step 2: Handle missing values (replace null/undefined with empty string)
-    if (!valueA) valueA = ''
-    if (!valueB) valueB = ''
+  // Load products from API when filters change
+  useEffect(() => {
+    loadProducts()
+  }, [searchTerm, selectedCategory, sortBy, sortOrder, currentPage])
 
-    // Step 3: For text fields, make comparison case-insensitive
-    if (typeof valueA === 'string') {
-      valueA = valueA.toLowerCase()
-      valueB = valueB.toLowerCase()
-    }
-
-    // Step 4: Compare values based on sort order
-    // For ascending: smaller values come first
-    // For descending: larger values come first
-    
-    if (sortOrder === 'asc') {
-      // Ascending: A comes before B if A is smaller
-      if (valueA < valueB) return -1  // A comes first
-      if (valueA > valueB) return 1     // B comes first
-      return 0  // They are equal, keep original order
-    } else {
-      // Descending: A comes before B if A is larger
-      if (valueA > valueB) return -1  // A comes first
-      if (valueA < valueB) return 1   // B comes first
-      return 0  // They are equal, keep original order
+  // Function to load categories from API
+  async function loadCategories() {
+    try {
+      const response = await axios.get(`${API_URL}/categories?page=1&limit=100`, {
+        headers: getHeaders(),
+      })
+      
+      if (response.data.success) {
+        setCategories(response.data.data.categories)
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error)
     }
   }
 
-  // Filter, sort, and paginate products
+  // Function to load products from API
+  async function loadProducts() {
+    try {
+      setIsLoading(true)
+      
+      // Build URL with filters
+      let url = `${API_URL}/products?page=${currentPage}&limit=${itemsPerPage}&sortBy=${sortBy}&sortOrder=${sortOrder}`
+      
+      if (searchTerm) {
+        url += `&search=${searchTerm}`
+      }
+      
+      if (selectedCategory && selectedCategory !== 'all') {
+        url += `&category=${selectedCategory}`
+      }
+      
+      const response = await axios.get(url, {
+        headers: getHeaders(),
+      })
+      
+      if (response.data.success) {
+        setProducts(response.data.data.products)
+        setTotalPages(response.data.data.pagination.totalPages)
+        setTotalItems(response.data.data.pagination.totalItems)
+      }
+    } catch (error) {
+      console.error('Error loading products:', error)
+      alert('Failed to load products')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Reset to page 1 when filters change
   useEffect(() => {
-    let filtered = [...products]
-
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter((product) =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    }
-
-    // Apply category filter
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter((product) => product.category === selectedCategory)
-    }
-
-    // Apply sorting using the sortProducts function
-    filtered.sort(sortProducts)
-
-    setFilteredProducts(filtered)
-    setCurrentPage(1) // Reset to first page when filters change
-  }, [products, searchTerm, selectedCategory, sortBy, sortOrder])
-
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentProducts = filteredProducts.slice(startIndex, endIndex)
+    setCurrentPage(1)
+  }, [searchTerm, selectedCategory, sortBy, sortOrder])
 
   const handleAdd = () => {
     setEditingProduct(null)
-    setFormData({ name: '', price: '', category: '', stock: '', images: [] })
-    setImageInputs([''])
+    setFormData({ name: '', price: '', category: '', stock: '' })
+    setSelectedImages([])
+    setImagePreviews([])
     setIsModalOpen(true)
   }
 
-  const handleEdit = (product) => {
+  function handleEdit(product) {
     setEditingProduct(product)
     setFormData({
       name: product.name,
       price: product.price.toString(),
       category: product.category,
       stock: product.stock.toString(),
-      images: product.images || [],
     })
-    // Set image inputs - if product has images, use them; otherwise start with one empty input
+    // Set existing images as previews (URLs from Cloudinary)
     const productImages = product.images && product.images.length > 0 ? product.images : []
-    setImageInputs(productImages.length > 0 ? productImages : [''])
+    setSelectedImages([]) // No new files selected
+    // Format existing images for preview
+    setImagePreviews(productImages.map(url => ({ type: 'url', data: url })))
     setIsModalOpen(true)
   }
 
-  const handleSave = () => {
+  // Handle image file selection
+  function handleImageChange(e) {
+    const files = Array.from(e.target.files)
+    
+    // Validate file types
+    const validFiles = files.filter(file => file.type.startsWith('image/'))
+    if (validFiles.length !== files.length) {
+      alert('Please select only image files')
+    }
+    
+    // Add new files to selected images
+    setSelectedImages(prev => [...prev, ...validFiles])
+    
+    // Create previews for new files
+    validFiles.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setImagePreviews(prev => [...prev, { type: 'file', data: e.target.result }])
+      }
+      reader.readAsDataURL(file)
+    })
+    
+    // Reset input to allow selecting same file again
+    e.target.value = ''
+  }
+
+  // Remove image (both file and preview)
+  function handleRemoveImage(index) {
+    // Check if it's a file or existing URL
+    const preview = imagePreviews[index]
+    if (preview && preview.type === 'file') {
+      // It's a file - remove from both arrays
+      const fileIndex = imagePreviews.slice(0, index).filter(p => p.type === 'file').length
+      setSelectedImages(prev => prev.filter((_, i) => i !== fileIndex))
+    }
+    // Remove from previews (works for both files and URLs)
+    setImagePreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Save product - create or update
+  async function handleSave() {
     if (!formData.name.trim() || !formData.price || !formData.category || !formData.stock) {
       alert('Please fill in all fields')
       return
@@ -177,47 +187,110 @@ const ProductManagement = () => {
       return
     }
 
-    // Filter out empty image URLs
-    const validImages = imageInputs.filter(url => url.trim() !== '')
-
-    if (editingProduct) {
-      // Update existing product
-      setProducts(
-        products.map((prod) =>
-          prod.id === editingProduct.id
-            ? {
-                ...prod,
-                name: formData.name,
-                price: price,
-                category: formData.category,
-                stock: stock,
-                images: validImages,
-              }
-            : prod
-        )
-      )
-    } else {
-      // Add new product
-      const newProduct = {
-        id: Date.now(),
-        name: formData.name,
-        price: price,
-        category: formData.category,
-        stock: stock,
-        images: validImages,
-      }
-      setProducts([...products, newProduct])
+    // Check if at least one image is selected (for new products)
+    if (!editingProduct && selectedImages.length === 0) {
+      alert('Please select at least one product image')
+      return
     }
 
-    setIsModalOpen(false)
-    setFormData({ name: '', price: '', category: '', stock: '', images: [] })
-    setImageInputs([''])
-    setEditingProduct(null)
+    try {
+      // Create FormData for file upload
+      const formDataToSend = new FormData()
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('price', price.toString())
+      formDataToSend.append('category', formData.category)
+      formDataToSend.append('stock', stock.toString())
+      
+      // Append image files
+      selectedImages.forEach((file) => {
+        formDataToSend.append('images', file)
+      })
+      
+      // If editing and keeping existing images, send them as URLs in body
+      if (editingProduct) {
+        const existingImageUrls = imagePreviews
+          .filter(preview => preview.type === 'url')
+          .map(preview => preview.data)
+        
+        if (existingImageUrls.length > 0) {
+          // Send existing URLs as JSON array (backend will handle both files and URLs)
+          formDataToSend.append('existingImages', JSON.stringify(existingImageUrls))
+        }
+      }
+
+      // Get headers with token
+      const token = localStorage.getItem('token')
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        // Don't set Content-Type - axios will set it automatically for FormData with boundary
+      }
+
+      if (editingProduct) {
+        // Update existing product - call API
+        const response = await axios.put(
+          `${API_URL}/products/${editingProduct._id}`,
+          formDataToSend,
+          { headers }
+        )
+        
+        if (response.data.success) {
+          // Reload products from API
+          loadProducts()
+          setIsModalOpen(false)
+          setFormData({ name: '', price: '', category: '', stock: '' })
+          setSelectedImages([])
+          setImagePreviews([])
+          setEditingProduct(null)
+        } else {
+          alert(response.data.message || 'Failed to update product')
+        }
+      } else {
+        // Create new product - call API
+        const response = await axios.post(
+          `${API_URL}/products`,
+          formDataToSend,
+          { headers }
+        )
+        
+        if (response.data.success) {
+          // Reload products from API
+          loadProducts()
+          setIsModalOpen(false)
+          setFormData({ name: '', price: '', category: '', stock: '' })
+          setSelectedImages([])
+          setImagePreviews([])
+        } else {
+          alert(response.data.message || 'Failed to create product')
+        }
+      }
+    } catch (error) {
+      console.error('Error saving product:', error)
+      const message = error.response?.data?.message || 'Failed to save product'
+      alert(message)
+    }
   }
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      setProducts(products.filter((prod) => prod.id !== id))
+  // Delete product - call API
+  async function handleDelete(id) {
+    if (!window.confirm('Are you sure you want to delete this product?')) {
+      return
+    }
+
+    try {
+      const response = await axios.delete(`${API_URL}/products/${id}`, {
+        headers: getHeaders(),
+      })
+      
+      if (response.data.success) {
+        // Reload products from API
+        loadProducts()
+      } else {
+        alert(response.data.message || 'Failed to delete product')
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      const message = error.response?.data?.message || 'Failed to delete product'
+      alert(message)
     }
   }
 
@@ -257,7 +330,7 @@ const ProductManagement = () => {
           >
             <option value="all">All Categories</option>
             {categories.map((cat) => (
-              <option key={cat.id} value={cat.name}>
+              <option key={cat._id} value={cat.name}>
                 {cat.name}
               </option>
             ))}
@@ -336,17 +409,23 @@ const ProductManagement = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {currentProducts.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
+                    Loading products...
+                  </td>
+                </tr>
+              ) : products.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
                     No products found
                   </td>
                 </tr>
               ) : (
-                currentProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
+                products.map((product) => (
+                  <tr key={product._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {product.id}
+                      {product._id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2">
@@ -394,7 +473,7 @@ const ProductManagement = () => {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() => handleDelete(product._id)}
                         className="text-red-600 hover:text-red-900"
                       >
                         Delete
@@ -413,8 +492,8 @@ const ProductManagement = () => {
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white px-4 py-3 rounded-lg shadow">
           <div className="text-xs sm:text-sm text-gray-700 text-center sm:text-left">
-            Showing {startIndex + 1} to {Math.min(endIndex, filteredProducts.length)} of{' '}
-            {filteredProducts.length} products
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of{' '}
+            {totalItems} products
           </div>
           <div className="flex gap-2 flex-wrap justify-center">
             <button
@@ -520,75 +599,57 @@ const ProductManagement = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Product Images (URLs)
+                  Product Images
                 </label>
-                <div className="space-y-2">
-                  {imageInputs.map((url, index) => (
-                    <div key={index} className="flex gap-2">
-                      <input
-                        type="url"
-                        value={url}
-                        onChange={(e) => {
-                          const newInputs = [...imageInputs]
-                          newInputs[index] = e.target.value
-                          setImageInputs(newInputs)
-                        }}
-                        placeholder="Enter image URL"
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      {imageInputs.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setImageInputs(imageInputs.filter((_, i) => i !== index))
-                          }}
-                          className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setImageInputs([...imageInputs, ''])}
-                    className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
-                  >
-                    + Add Another Image
-                  </button>
-                </div>
-                {/* Image Previews */}
-                {imageInputs.some(url => url.trim() !== '') && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Image Previews:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {imageInputs.map((url, index) => {
-                        if (!url.trim()) return null
-                        return (
-                          <div key={index} className="relative">
+                <div className="space-y-4">
+                  {/* File Input */}
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Select one or more image files (JPG, PNG, etc.)
+                    </p>
+                  </div>
+                  
+                  {/* Image Previews */}
+                  {imagePreviews.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Selected Images:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {imagePreviews.map((preview, index) => (
+                          <div key={index} className="relative group">
                             <img
-                              src={url}
+                              src={preview.data}
                               alt={`Preview ${index + 1}`}
                               className="w-20 h-20 object-cover rounded border border-gray-300"
-                              onError={(e) => {
-                                e.target.onerror = null
-                                e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="80"%3E%3Crect width="80" height="80" fill="%23e5e7eb"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="10"%3EInvalid%3C/text%3E%3C/svg%3E'
-                              }}
                             />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(index)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              ×
+                            </button>
                           </div>
-                        )
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => {
                   setIsModalOpen(false)
-                  setFormData({ name: '', price: '', category: '', stock: '', images: [] })
-                  setImageInputs([''])
+                  setFormData({ name: '', price: '', category: '', stock: '' })
+                  setSelectedImages([])
+                  setImagePreviews([])
                   setEditingProduct(null)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
