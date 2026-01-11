@@ -10,11 +10,12 @@ import { protect } from '../controllers/authController.js';
 
 const router = express.Router();
 
-// All routes are protected
-router.use(protect);
-
+// Public routes (no authentication required)
 router.get('/', getCategories);
 router.get('/:id', getCategory);
+
+// Protected routes (authentication required)
+router.use(protect);
 router.post('/', createCategory);
 router.put('/:id', updateCategory);
 router.delete('/:id', deleteCategory);

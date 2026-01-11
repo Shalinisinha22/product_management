@@ -24,6 +24,7 @@ const ProductManagement = () => {
     price: '',
     category: '',
     stock: '',
+    isTrending: false,
   })
   const [selectedImages, setSelectedImages] = useState([])
   const [imagePreviews, setImagePreviews] = useState([])
@@ -105,7 +106,7 @@ const ProductManagement = () => {
 
   const handleAdd = () => {
     setEditingProduct(null)
-    setFormData({ name: '', price: '', category: '', stock: '' })
+    setFormData({ name: '', price: '', category: '', stock: '', isTrending: false })
     setSelectedImages([])
     setImagePreviews([])
     setIsModalOpen(true)
@@ -118,6 +119,7 @@ const ProductManagement = () => {
       price: product.price.toString(),
       category: product.category,
       stock: product.stock.toString(),
+      isTrending: product.isTrending || false,
     })
     // Set existing images as previews (URLs from Cloudinary)
     const productImages = product.images && product.images.length > 0 ? product.images : []
@@ -200,6 +202,7 @@ const ProductManagement = () => {
       formDataToSend.append('price', price.toString())
       formDataToSend.append('category', formData.category)
       formDataToSend.append('stock', stock.toString())
+      formDataToSend.append('isTrending', formData.isTrending.toString())
       
       // Append image files
       selectedImages.forEach((file) => {
@@ -237,7 +240,7 @@ const ProductManagement = () => {
           // Reload products from API
           loadProducts()
           setIsModalOpen(false)
-          setFormData({ name: '', price: '', category: '', stock: '' })
+          setFormData({ name: '', price: '', category: '', stock: '', isTrending: false })
           setSelectedImages([])
           setImagePreviews([])
           setEditingProduct(null)
@@ -256,7 +259,7 @@ const ProductManagement = () => {
           // Reload products from API
           loadProducts()
           setIsModalOpen(false)
-          setFormData({ name: '', price: '', category: '', stock: '' })
+          setFormData({ name: '', price: '', category: '', stock: '', isTrending: false })
           setSelectedImages([])
           setImagePreviews([])
         } else {
@@ -598,6 +601,17 @@ const ProductManagement = () => {
                 />
               </div>
               <div>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.isTrending}
+                    onChange={(e) => setFormData({ ...formData, isTrending: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Mark as Trending Product</span>
+                </label>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Product Images
                 </label>
@@ -647,7 +661,7 @@ const ProductManagement = () => {
               <button
                 onClick={() => {
                   setIsModalOpen(false)
-                  setFormData({ name: '', price: '', category: '', stock: '' })
+                  setFormData({ name: '', price: '', category: '', stock: '', isTrending: false })
                   setSelectedImages([])
                   setImagePreviews([])
                   setEditingProduct(null)

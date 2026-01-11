@@ -1,6 +1,6 @@
 import { useState, useContext } from 'react'
 import { AuthContext } from '../context/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 const Login = () => {
   const [username, setUsername] = useState('')
@@ -20,7 +20,11 @@ const Login = () => {
       const result = await login(username, password)
       
       if (result.success) {
-        navigate('/dashboard')
+        if (result.user?.role === 'admin') {
+          navigate('/dashboard')
+        } else {
+          navigate('/shop')
+        }
       } else {
         setError(result.message)
       }
@@ -86,10 +90,13 @@ const Login = () => {
           </button>
         </form>
 
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm text-gray-700 font-medium mb-2">Demo Credentials:</p>
-          <p className="text-xs text-gray-600">Username: <span className="font-mono font-semibold">admin</span></p>
-          <p className="text-xs text-gray-600">Password: <span className="font-mono font-semibold">admin123</span></p>
+     
+
+        <div className="mt-4 text-center text-sm text-gray-600">
+          New here?{' '}
+          <Link to="/signup" className="text-blue-600 font-semibold hover:underline">
+            Create an account
+          </Link>
         </div>
       </div>
     </div>

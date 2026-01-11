@@ -13,7 +13,14 @@ function getHeaders() {
   }
 }
 
-export const AuthContext = createContext(null)
+export const AuthContext = createContext({
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  login: async () => ({ success: false }),
+  signup: async () => ({ success: false }),
+  logout: () => {},
+})
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
@@ -69,13 +76,36 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', response.data.data.token)
         setUser(response.data.data.user)
         setIsAuthenticated(true)
-        return { success: true, message: 'Login successful!' }
+        return { success: true, message: 'Login successful!', user: response.data.data.user }
       } else {
         return { success: false, message: response.data.message || 'Login failed' }
       }
     } catch (error) {
       const message = error.response?.data?.message || error.message || 'Login failed'
       return { success: false, message: message }
+    }
+  }
+
+  // Signup function - create account and log in
+  async function signup({ name, email, username, password }) {
+    try {
+      const response = await axios.post(
+        `${API_URL}/auth/register`,
+        { name, email, username, password },
+        { headers: { 'Content-Type': 'application/json' } }
+      )
+
+      if (response.data.success) {
+        localStorage.setItem('token', response.data.data.token)
+        setUser(response.data.data.user)
+        setIsAuthenticated(true)
+        return { success: true, message: 'Signup successful!', user: response.data.data.user }
+      } else {
+        return { success: false, message: response.data.message || 'Signup failed' }
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || 'Signup failed'
+      return { success: false, message }
     }
   }
 
@@ -98,6 +128,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     isLoading,
     login,
+    signup,
     logout,
   }
 

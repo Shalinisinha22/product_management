@@ -1,9 +1,10 @@
 import express from 'express';
-import { login, logout, getMe, protect } from '../controllers/authController.js';
+import { login, logout, getMe, protect, register } from '../controllers/authController.js';
 
 const router = express.Router();
 
 // Public routes
+router.post('/register', register);
 router.post('/login', login);
 
 // Protected routes

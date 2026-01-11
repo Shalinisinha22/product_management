@@ -2,9 +2,12 @@ import { useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import CategoryManagement from '../components/CategoryManagement'
 import ProductManagement from '../components/ProductManagement'
+import AdminStats from '../components/AdminStats'
+import AdminOrders from '../components/AdminOrders'
+import AdminUsers from '../components/AdminUsers'
 
 const Dashboard = () => {
-  const [activeSection, setActiveSection] = useState('products')
+  const [activeSection, setActiveSection] = useState('stats')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -55,16 +58,20 @@ const Dashboard = () => {
               </svg>
             </button>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
-              {activeSection === 'categories' ? 'Category Management' : 'Product Management'}
+              {activeSection === 'stats' && 'Dashboard Stats'}
+              {activeSection === 'products' && 'Product Management'}
+              {activeSection === 'categories' && 'Category Management'}
+              {activeSection === 'orders' && 'Orders Management'}
+              {activeSection === 'users' && 'Users Management'}
             </h1>
           </div>
         </header>
         <main className="flex-1 overflow-auto p-4 sm:p-6">
-          {activeSection === 'categories' ? (
-            <CategoryManagement />
-          ) : (
-            <ProductManagement />
-          )}
+          {activeSection === 'stats' && <AdminStats />}
+          {activeSection === 'products' && <ProductManagement />}
+          {activeSection === 'categories' && <CategoryManagement />}
+          {activeSection === 'orders' && <AdminOrders />}
+          {activeSection === 'users' && <AdminUsers />}
         </main>
       </div>
     </div>

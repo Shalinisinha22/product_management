@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getProducts,
   getProduct,
+  getTrendingProducts,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -10,11 +11,13 @@ import { protect } from '../controllers/authController.js';
 
 const router = express.Router();
 
-// All routes are protected
-router.use(protect);
-
+// Public routes (no authentication required)
 router.get('/', getProducts);
+router.get('/trending', getTrendingProducts);
 router.get('/:id', getProduct);
+
+// Protected routes (authentication required)
+router.use(protect);
 router.post('/', createProduct);
 router.put('/:id', updateProduct);
 router.delete('/:id', deleteProduct);

@@ -115,6 +115,7 @@ export async function login(req, res) {
           username: user.username,
           name: user.name,
           email: user.email,
+          role: user.role,
         },
       },
     });
@@ -127,6 +128,65 @@ export async function login(req, res) {
     });
   }
 };
+
+// Register user
+// POST /api/auth/register
+export async function register(req, res) {
+  try {
+    const { username, password, name, email } = req.body;
+
+    if (!username || !password || !name || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide name, email, username, and password',
+        error: 'VALIDATION_ERROR',
+      });
+    }
+
+    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'User with that username or email already exists',
+        error: 'USER_EXISTS',
+      });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const user = await User.create({
+      username,
+      password: hashedPassword,
+      name,
+      email,
+      role: 'user',
+    });
+
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully',
+      data: {
+        token,
+        user: {
+          id: user._id,
+          username: user.username,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: 'SERVER_ERROR',
+    });
+  }
+}
 
 // Get current user
 // GET /api/auth/me
@@ -141,6 +201,7 @@ export async function getMe(req, res) {
         username: user.username,
         name: user.name,
         email: user.email,
+        role: user.role,
       },
     });
   } catch (error) {

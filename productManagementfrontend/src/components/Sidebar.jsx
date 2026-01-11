@@ -51,6 +51,16 @@ const Sidebar = ({ activeSection, setActiveSection, setSidebarOpen }) => {
         </div>
         <nav className="space-y-2">
           <button
+            onClick={() => handleNavClick('stats')}
+            className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+              activeSection === 'stats'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            📊 Dashboard Stats
+          </button>
+          <button
             onClick={() => handleNavClick('products')}
             className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
               activeSection === 'products'
@@ -58,7 +68,7 @@ const Sidebar = ({ activeSection, setActiveSection, setSidebarOpen }) => {
                 : 'text-gray-300 hover:bg-gray-700'
             }`}
           >
-            Product Management
+            📦 Product Management
           </button>
           <button
             onClick={() => handleNavClick('categories')}
@@ -68,7 +78,27 @@ const Sidebar = ({ activeSection, setActiveSection, setSidebarOpen }) => {
                 : 'text-gray-300 hover:bg-gray-700'
             }`}
           >
-            Category Management
+            🏷️ Category Management
+          </button>
+          <button
+            onClick={() => handleNavClick('orders')}
+            className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+              activeSection === 'orders'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            📋 Orders
+          </button>
+          <button
+            onClick={() => handleNavClick('users')}
+            className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+              activeSection === 'users'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            👥 Users
           </button>
         </nav>
       </div>

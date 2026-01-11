@@ -80,7 +80,7 @@ async function deleteImage(imageUrl) {
 // GET /api/products
 export async function getProducts(req, res) {
   try {
-    const { search, category, sortBy = 'name', sortOrder = 'asc', page = 1, limit = 5 } = req.query;
+    const { search, category, sortBy = 'name', sortOrder = 'asc', page = 1, limit = 20 } = req.query;
     
     // Build query
     const query = {};
@@ -126,6 +126,28 @@ export async function getProducts(req, res) {
     });
   } catch (error) {
     console.error('Get products error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: 'SERVER_ERROR',
+    });
+  }
+};
+
+// Get trending products
+// GET /api/products/trending
+export async function getTrendingProducts(req, res) {
+  try {
+    const products = await Product.find({ isTrending: true })
+      .sort({ views: -1 })
+      .limit(8);
+
+    res.status(200).json({
+      success: true,
+      data: products,
+    });
+  } catch (error) {
+    console.error('Get trending products error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -181,6 +203,7 @@ export async function createProduct(req, res) {
     const price = Array.isArray(fields.price) ? fields.price[0] : fields.price;
     const category = Array.isArray(fields.category) ? fields.category[0] : fields.category;
     const stock = Array.isArray(fields.stock) ? fields.stock[0] : fields.stock;
+    const isTrending = fields.isTrending ? (Array.isArray(fields.isTrending) ? fields.isTrending[0] === 'true' : fields.isTrending === 'true' || fields.isTrending === true) : false;
 
     // Validation
     const errors = {};
@@ -262,6 +285,7 @@ export async function createProduct(req, res) {
       category: category.trim(),
       stock: parseInt(stock),
       images: processedImages,
+      isTrending: isTrending,
     });
 
     res.status(201).json({
@@ -308,6 +332,7 @@ export async function updateProduct(req, res) {
     const price = fields.price ? (Array.isArray(fields.price) ? fields.price[0] : fields.price) : undefined;
     const category = fields.category ? (Array.isArray(fields.category) ? fields.category[0] : fields.category) : undefined;
     const stock = fields.stock ? (Array.isArray(fields.stock) ? fields.stock[0] : fields.stock) : undefined;
+    const isTrending = fields.isTrending !== undefined ? (Array.isArray(fields.isTrending) ? fields.isTrending[0] === 'true' : fields.isTrending === 'true' || fields.isTrending === true) : undefined;
 
     // Validation
     const errors = {};
@@ -428,6 +453,7 @@ export async function updateProduct(req, res) {
     if (price !== undefined) product.price = parseFloat(price);
     if (category !== undefined) product.category = category.trim();
     if (stock !== undefined) product.stock = parseInt(stock);
+    if (isTrending !== undefined) product.isTrending = isTrending;
     
     // Update images if:
     // 1. New files were uploaded, OR

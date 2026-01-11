@@ -2,10 +2,9 @@ import { Navigate } from 'react-router-dom'
 import { useContext } from 'react'
 import { AuthContext } from '../context/AuthContext'
 
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useContext(AuthContext)
+const ProtectedRoute = ({ children, adminOnly = false }) => {
+  const { isAuthenticated, isLoading, user } = useContext(AuthContext)
 
-  // Show loading while checking authentication
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -14,9 +13,12 @@ const ProtectedRoute = ({ children }) => {
     )
   }
 
-  // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+
+  if (adminOnly && user?.role !== 'admin') {
+    return <Navigate to="/" replace />
   }
 
   return children

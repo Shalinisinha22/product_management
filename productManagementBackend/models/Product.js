@@ -34,6 +34,14 @@ const productSchema = new mongoose.Schema({
       message: 'Maximum 10 images allowed per product',
     },
   },
+  isTrending: {
+    type: Boolean,
+    default: false,
+  },
+  views: {
+    type: Number,
+    default: 0,
+  },
 }, {
   timestamps: true,
 });
