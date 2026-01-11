@@ -75,15 +75,12 @@ function Orders() {
       <header className="bg-white shadow-md">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link to="/" className="text-2xl font-bold text-blue-600">E-Commerce Store</Link>
-          <nav className="flex gap-4">
+          <nav className="flex gap-4 items-center">
             <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
             <Link to="/shop" className="text-gray-700 hover:text-blue-600">Shop</Link>
             <Link to="/cart" className="text-gray-700 hover:text-blue-600">Cart</Link>
-            {isAuthenticated ? (
-              <Link to="/dashboard" className="text-gray-700 hover:text-blue-600">Dashboard</Link>
-            ) : (
-              <Link to="/login" className="text-gray-700 hover:text-blue-600">Login</Link>
-            )}
+            <Link to="/orders" className="text-blue-600 font-semibold">Orders</Link>
+            <Link to="/profile" className="text-gray-700 hover:text-blue-600">Profile</Link>
           </nav>
         </div>
       </header>

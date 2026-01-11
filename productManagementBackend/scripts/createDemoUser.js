@@ -48,12 +48,13 @@ async function createDemoUser() {
     // Hash the password before saving
     const hashedPassword = await hashPassword('admin123');
 
-    // Create demo user
+    // Create demo user with admin role
     const user = await User.create({
       username: 'admin',
       password: hashedPassword, // Save hashed password
       name: 'Admin User',
       email: 'admin@example.com',
+      role: 'admin',
     });
 
     console.log('✅ Demo user created successfully!');

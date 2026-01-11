@@ -5,7 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 
 function Cart() {
   const { cartItems, cartTotal, updateCartItem, removeFromCart, fetchCart, isLoading } = useContext(CartContext);
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,12 +38,21 @@ function Cart() {
       <header className="bg-white shadow-md">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link to="/" className="text-2xl font-bold text-blue-600">E-Commerce Store</Link>
-          <nav className="flex gap-4">
+          <nav className="flex gap-4 items-center">
             <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
             <Link to="/shop" className="text-gray-700 hover:text-blue-600">Shop</Link>
             <Link to="/cart" className="text-gray-700 hover:text-blue-600 font-semibold">Cart</Link>
             {isAuthenticated ? (
-              <Link to="/dashboard" className="text-gray-700 hover:text-blue-600">Dashboard</Link>
+              <>
+                {user?.role === 'admin' ? (
+                  <Link to="/dashboard" className="text-gray-700 hover:text-blue-600">Dashboard</Link>
+                ) : (
+                  <>
+                    <Link to="/orders" className="text-gray-700 hover:text-blue-600">Orders</Link>
+                    <Link to="/profile" className="text-gray-700 hover:text-blue-600">Profile</Link>
+                  </>
+                )}
+              </>
             ) : (
               <Link to="/login" className="text-gray-700 hover:text-blue-600">Login</Link>
             )}

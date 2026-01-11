@@ -10,6 +10,7 @@ import Shop from './pages/Shop'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Orders from './pages/Orders'
+import Profile from './pages/Profile'
 import './App.css'
 
 function App() {
@@ -46,6 +47,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Orders />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />

@@ -11,7 +11,7 @@ function Home() {
   const [trendingProducts, setTrendingProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addToCart } = useContext(CartContext);
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
 
   useEffect(() => {
     fetchData();
@@ -69,12 +69,21 @@ function Home() {
       <header className="bg-white shadow-md">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-blue-600">E-Commerce Store</h1>
-          <nav className="flex gap-4">
+          <nav className="flex gap-4 items-center">
             <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
             <Link to="/shop" className="text-gray-700 hover:text-blue-600">Shop</Link>
             <Link to="/cart" className="text-gray-700 hover:text-blue-600">Cart</Link>
             {isAuthenticated ? (
-              <Link to="/dashboard" className="text-gray-700 hover:text-blue-600">Dashboard</Link>
+              <>
+                {user?.role === 'admin' ? (
+                  <Link to="/dashboard" className="text-gray-700 hover:text-blue-600">Dashboard</Link>
+                ) : (
+                  <>
+                    <Link to="/orders" className="text-gray-700 hover:text-blue-600">Orders</Link>
+                    <Link to="/profile" className="text-gray-700 hover:text-blue-600">Profile</Link>
+                  </>
+                )}
+              </>
             ) : (
               <>
                 <Link to="/login" className="text-gray-700 hover:text-blue-600">Login</Link>
@@ -103,12 +112,21 @@ function Home() {
               >
                 Start Shopping
               </Link>
-              <Link
-                to="/dashboard"
-                className="px-6 py-3 border border-white/70 text-white font-semibold rounded-lg hover:bg-white/10 transition"
-              >
-                Go to Dashboard
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  to={user?.role === 'admin' ? '/dashboard' : '/orders'}
+                  className="px-6 py-3 border border-white/70 text-white font-semibold rounded-lg hover:bg-white/10 transition"
+                >
+                  {user?.role === 'admin' ? 'Go to Dashboard' : 'My Orders'}
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className="px-6 py-3 border border-white/70 text-white font-semibold rounded-lg hover:bg-white/10 transition"
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </div>
           <div className="bg-white text-gray-800 rounded-xl shadow-xl p-6 grid gap-4">
